@@ -3,19 +3,48 @@
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
 	         <div class="card text-center">
 			<div class="card-header">
-				投稿一覧
+				体育館一覧
 			</div>
 			<div class="card-body">
-				<h5 class="card-title">初めての投稿</h5>
-				<p class="card-text">油そばは春日亭も好きですが、kirinjiが一番好きです</p>
-				<a href="#" class="btn btn-primary">詳細</a>
-			</div>
-			<div class="card-footer text-muted">
-				2日前
-			</div>
+				<form action="{{route('gyms.search')}}" method="get">
+					@csrf
+					<p>検索したいキーワードを入力してください。</p>
+  					<input type="search" name="search" placeholder="キーワードを入力">
+  					<input type="submit"  value="検索">
+				</form>
+				@isset($search_result)
+				<div>
+		
+				
+				<h3>
+				{{$search_result}}
+				</h3>
+				</div>
+				@endisset
+
+				<!-- <p class="card-text"> -->
+				<div class="row">
+				@foreach($gyms as $gym)
+				<div class="card col-md-3" style="width: 18rem;">
+				
+  
+  <div class="card-body">
+    <h5 class="card-title">{{$gym -> name }}</h5>
+    <p class="card-text">{{$gym -> prefecture ->name}}</p>
+    <p class="card-text">{{$gym -> area ->name}}</p>
+    <p class="card-text">{{$gym -> price}}</p>
+    <a href="{{ route('gyms.show',$gym ->id) }}" class="btn btn-primary">詳細へ</a>
+  </div>
+</div>
+                        @endforeach
+				</div>
+				
+				<!-- </p> -->
+				
+			
 		</div>
         </div>
 
@@ -26,4 +55,4 @@
 </div>
 @endsection
 
-<!-- git add test -->
+

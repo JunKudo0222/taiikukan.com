@@ -6,9 +6,17 @@ use Illuminate\Http\Request;
 use App\Prefecture;
 use App\Area;
 use App\Weekday;
+use App\Gym;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\GymRequest;
+use JD\Cloudder\Facades\Cloudder;
 
 class GymController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
     /**
      * Display a listing of the resource.
      *
@@ -16,7 +24,12 @@ class GymController extends Controller
      */
     public function index()
     {
-        return view('gyms.index');
+        $gyms = Gym::all();
+
+        
+        $gyms->load('prefecture', 'area');
+        return view('gyms.index',compact('gyms'));
+
     }
 
     /**
@@ -38,18 +51,50 @@ class GymController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(GymRequest $request)
     {
-        dd($request);
 
         $gym = new Gym; 
         $gym -> name    = $request -> name; //ユーザー入力のtitleを代入
-        $gym ->      = $request -> body; //ユーザー入力のbodyを代入
+        $gym -> openhour = $request -> openhour; //ユーザー入力のbodyを代入
+        $gym -> closehour = $request -> closehour; //ユーザー入力のbodyを代入
+        $gym -> detail = $request -> detail; //ユーザー入力のbodyを代入
+        $gym -> area_id = $request -> area; //ユーザー入力のbodyを代入
+        $gym -> email = $request -> email; //ユーザー入力のbodyを代入
+        $gym -> phonenumber = $request -> phonenumber; //ユーザー入力のbodyを代入
+        $gym -> price = $request -> price; //ユーザー入力のbodyを代入
+        $gym -> prefecture_id = $request -> prefecture; //ユーザー入力のbodyを代入
+        
         $gym -> user_id  = Auth::id(); //ログイン中のユーザーidを代入
 
+        if ($image = $request->file('image')) {
+            $image_path = $image->getRealPath();
+            Cloudder::upload($image_path, null);
+            //直前にアップロードされた画像のpublicIdを取得する。
+            $publicId = Cloudder::getPublicId();
+            $logoUrl = Cloudder::secureShow($publicId, [
+                'width'     => 200,
+                'height'    => 200
+            ]);
+            $gym->image_path = $logoUrl;
+            $gym->public_id  = $publicId;
+        }
+
+
         $gym -> save(); //保存してあげましょう
+        foreach($request->weeks as $week){
+            
+                $gym->weekdays()->attach($week);
+            
+        }
         
-        return redirect()->route('posts.index');
+
+        
+        
+        
+        
+        
+        return redirect()->route('gyms.index');
     }
 
     /**
@@ -60,7 +105,12 @@ class GymController extends Controller
      */
     public function show($id)
     {
-        //
+        $gym = Gym::find($id);
+        $gym->load('weekdays','area','prefecture');
+        
+        
+
+        return view('gyms.show', compact('gym'));
     }
 
     /**
@@ -71,7 +121,18 @@ class GymController extends Controller
      */
     public function edit($id)
     {
-        //
+        $gym = Gym::find($id);
+        $gym->load('weekdays','area','prefecture');
+        $prefectures = Prefecture::all();
+        $areas = Area::all();
+        $weekdays = Weekday::all();
+        $gym_weekdays = $gym -> weekdays;
+        foreach($gym_weekdays as $gym_weekday){
+            $gym_weekdays_id[] = $gym_weekday -> id;
+        }
+        
+        return view('gyms.edit',compact('gym','prefectures','areas','weekdays','gym_weekdays_id'));
+
     }
 
     /**
@@ -83,7 +144,50 @@ class GymController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        
+        $gym = Gym::find($id);
+        $gym -> name    = $request -> name; //ユーザー入力のtitleを代入
+        $gym -> openhour = $request -> openhour; //ユーザー入力のbodyを代入
+        $gym -> closehour = $request -> closehour; //ユーザー入力のbodyを代入
+        $gym -> detail = $request -> detail; //ユーザー入力のbodyを代入
+        $gym -> area_id = $request -> area; //ユーザー入力のbodyを代入
+        $gym -> email = $request -> email; //ユーザー入力のbodyを代入
+        $gym -> phonenumber = $request -> phonenumber; //ユーザー入力のbodyを代入
+        $gym -> price = $request -> price; //ユーザー入力のbodyを代入
+        $gym -> prefecture_id = $request -> prefecture; //ユーザー入力のbodyを代入
+    
+        
+        if ($image = $request->file('image')) {
+            $image_path = $image->getRealPath();
+            Cloudder::upload($image_path, null);
+            //直前にアップロードされた画像のpublicIdを取得する。
+            $publicId = Cloudder::getPublicId();
+            $logoUrl = Cloudder::secureShow($publicId, [
+                'width'     => 200,
+                'height'    => 200
+            ]);
+            $gym->image_path = $logoUrl;
+            $gym->public_id  = $publicId;
+        }
+
+
+        $gym -> save(); //保存してあげましょう
+        
+        $gym->weekdays()->detach();
+        foreach($request->weeks as $week){
+            
+            $gym->weekdays()->attach($week);
+                
+            
+        }
+        
+
+        
+        
+        
+        
+        
+        return redirect()->route('gyms.show',$gym ->id);
     }
 
     /**
@@ -94,6 +198,32 @@ class GymController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $gym = Gym::find($id);
+
+        if(Auth::id() !== $gym->user_id){
+            return abort(404);
+        }
+
+        if(isset($gym->public_id)){
+            Cloudder::destroyImage($gym->public_id);
+        }
+
+        $gym -> delete();
+
+        return redirect()->route('gyms.index');
+    }
+    public function search(Request $request)
+    {
+        $gyms = Gym::where('name','like','%'.$request->search.'%')
+        ->orWhereHas('area', function($query) use($request) {           
+            $query->where('name', 'like', "%{$request->search}%");})
+            ->orWhereHas('prefecture', function($query) use($request) {
+                $query->where('name','like',"%{$request->search}%");})->get();
+
+                $search_result = $request->search.'の検索結果'.$gyms->count().'件';
+
+                return view('gyms.index',compact('gyms','search_result'));
+        
+        
     }
 }

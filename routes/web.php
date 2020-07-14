@@ -19,7 +19,10 @@ Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
 
+Route::get('gyms/search', 'GymController@search')->name('gyms.search');
+
 Route::resource('gyms', 'GymController');
-// Route::get('gyms/make', 'GymController@create')->name('gyms.make');
+
 
 Route::resource('comments', 'CommentController');
+
