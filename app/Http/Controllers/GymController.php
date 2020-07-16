@@ -10,6 +10,7 @@ use App\Gym;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\GymRequest;
 use JD\Cloudder\Facades\Cloudder;
+use App\Comment;
 
 class GymController extends Controller
 {
@@ -25,10 +26,11 @@ class GymController extends Controller
     public function index()
     {
         $gyms = Gym::all();
+        $weekdays = Weekday::all();
 
         
         $gyms->load('prefecture', 'area');
-        return view('gyms.index',compact('gyms'));
+        return view('gyms.index',compact('gyms','weekdays'));
 
     }
 
@@ -106,7 +108,10 @@ class GymController extends Controller
     public function show($id)
     {
         $gym = Gym::find($id);
-        $gym->load('weekdays','area','prefecture');
+        
+        $gym->load('weekdays','area','prefecture','user','comments');
+
+        
         
         
 
@@ -211,19 +216,46 @@ class GymController extends Controller
         $gym -> delete();
 
         return redirect()->route('gyms.index');
+
+
+        
     }
     public function search(Request $request)
     {
-        $gyms = Gym::where('name','like','%'.$request->search.'%')
-        ->orWhereHas('area', function($query) use($request) {           
-            $query->where('name', 'like', "%{$request->search}%");})
-            ->orWhereHas('prefecture', function($query) use($request) {
-                $query->where('name','like',"%{$request->search}%");})->get();
+        
+        $weekdays = Weekday::all();
+        $query = Gym::query();
 
-                $search_result = $request->search.'の検索結果'.$gyms->count().'件';
+        if(isset($request->search)){
+            $query->where('name','like','%'.$request->search.'%')
+            ->orWhereHas('prefecture', function($query) use($request) {           
+                $query->where('name', 'like', "%{$request->search}%");})
+            ->orWhereHas('area', function($query) use($request) {
+                $query->where('name','like',"%{$request->search}%");});
+        }
 
-                return view('gyms.index',compact('gyms','search_result'));
+        if(isset($request->weeks)){
+            foreach($request->weeks as $week){
+                $query->whereIn('gyms.id', function($query) use ($week) {
+                    $query->from('gym_weekday')
+                    ->select('gym_weekday.gym_id')
+                    ->where('gym_weekday.weekday_id',$week);
+                });
+            }
+        }
+        
+         $gyms = $query->get();
         
         
+        
+
+        $search_result = $request->search.'の検索結果'.$gyms->count().'件';
+
+        return view('gyms.index',compact('gyms','search_result','weekdays'));    
     }
+  
 }
+
+// @foreach( $gym->weekdays as $weekday)
+//                     {{ $weekday->name }}/
+//                 @endforeach

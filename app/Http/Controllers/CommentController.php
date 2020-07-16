@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Gym;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\GymRequest;
+use App\Comment;
+
 
 class CommentController extends Controller
 {
@@ -34,7 +39,19 @@ class CommentController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $gym = Gym::find($request->gym_id);  //まず該当の投稿を探す
+
+        $comment = new Comment;              //commentのインスタンスを作成
+
+        $comment -> body    = $request -> body;
+        $comment -> user_id = Auth::id();
+        $comment -> gym_id = $request -> gym_id;
+
+    
+
+        $comment -> save();
+
+        return redirect()->route('gyms.show',$gym ->id);
     }
 
     /**
