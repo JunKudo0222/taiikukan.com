@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\GymRequest;
 use JD\Cloudder\Facades\Cloudder;
 use App\Comment;
+use App\Rating;
+use App\Valuation;
 
 class GymController extends Controller
 {
@@ -111,11 +113,18 @@ class GymController extends Controller
         
         $gym->load('weekdays','area','prefecture','user','comments');
 
+
+        
+        $rating = Rating::where('user_id',Auth::id())
+                            ->where('gym_id',$gym->id)->first();
+
+        $valuation = Valuation::where('gym_id',$gym->id)->first();
+        
         
         
         
 
-        return view('gyms.show', compact('gym'));
+        return view('gyms.show', compact('gym','rating','valuation'));
     }
 
     /**

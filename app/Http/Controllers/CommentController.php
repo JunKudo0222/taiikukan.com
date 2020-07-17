@@ -7,6 +7,8 @@ use App\Gym;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\GymRequest;
 use App\Comment;
+use App\Rating;
+use App\Valuation;
 
 
 class CommentController extends Controller
@@ -39,17 +41,36 @@ class CommentController extends Controller
      */
     public function store(Request $request)
     {
+        
         $gym = Gym::find($request->gym_id);  //まず該当の投稿を探す
 
         $comment = new Comment;              //commentのインスタンスを作成
-
         $comment -> body    = $request -> body;
         $comment -> user_id = Auth::id();
         $comment -> gym_id = $request -> gym_id;
 
-    
-
         $comment -> save();
+
+        $rating = Rating::updateOrCreate([
+            'user_id' => Auth::id(),
+            'gym_id' => $request->gym_id
+        ],[
+           'rate' => $request -> rate,
+           'user_id' => Auth::id(),
+           'gym_id' => $request -> gym_id,
+
+        ]);
+        
+        $average = Rating::where('gym_id',$request->gym_id)->avg('rate');
+        
+        $valuation = Valuation::updateOrCreate([
+            'gym_id' => $request->gym_id
+        ],[
+            'gym_id' => $request -> gym_id,
+            'calculated_rate' => $average,
+        ]
+
+        );
 
         return redirect()->route('gyms.show',$gym ->id);
     }

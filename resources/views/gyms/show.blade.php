@@ -62,6 +62,13 @@
       <td>{{ $gym->prefecture->name }}・{{ $gym->area->name }}</td>
       
     </tr>
+    @if(isset($valuation->calculated_rate))
+    <tr>
+      <th scope="row">評価</th>
+      <td>{{ $valuation->calculated_rate }}</td>
+      
+    </tr>
+    @endif
     <tr>
       <th scope="row">利用可能日</th>
       <td>@foreach( $gym->weekdays as $weekday)
@@ -90,8 +97,26 @@
 </div></div>
 <div class="row justify-content-center">
         <div class="col-md-8">
+        
             <form action="{{ route('comments.store') }}" method="POST">
             {{csrf_field()}}
+            
+              
+        <select type="text" name="rate">
+    @foreach(config('score') as $key => $score)
+
+        @if(isset($rating->rate) && $rating -> rate == $key )
+        <option value="{{ $key }}" selected>{{ $score }}</option>
+        @else
+        <option value="{{ $key }}">{{ $score }}</option>
+          
+        @endif
+      
+      
+      
+    
+    @endforeach
+</select>
 	    <input type="hidden" name="gym_id" value="{{ $gym->id }}">
                 <div class="form-group">
                     <label>コメント</label>
@@ -106,6 +131,7 @@
 
 
 <div class="row justify-content-center">
+
         <div class="col-md-8">
             @foreach ($gym->comments as $comment)
             <div class="card mt-3">
