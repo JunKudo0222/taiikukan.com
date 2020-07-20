@@ -65,6 +65,8 @@
     @if(isset($valuation->calculated_rate))
     <tr>
       <th scope="row">評価</th>
+      
+
       <td>{{ $valuation->calculated_rate }}</td>
       
     </tr>
@@ -91,6 +93,25 @@
                     <input type='submit' value='削除' class="btn btn-danger" 
                      onclick='return confirm("削除しますか？");'>
             </form>
+            
+            @if($gym->users()->where('user_id', Auth::id())->exists())
+    <div class="col-md-3">
+      <form action="{{ route('unfavorites', $gym) }}" method="POST">
+         @csrf
+         <input type="submit" value="ブックマーク取り消す" class="fas btn btn-danger">
+      </form>
+     </div>
+@else
+    <div class="col-md-3">
+      <form action="{{ route('favorites', $gym) }}" method="POST">
+        @csrf
+        <input type="submit" value="ブックマーク" class="fas btn btn-success">
+      </form>
+     </div>
+ @endif
+ <div class="row justify-content-center">
+    <p>ブックマーク数：{{ $gym->users()->count() }}</p>
+</div>
             <br><br>
             <a href="{{ route('gyms.index') }}" class="btn btn-primary">一覧へ戻る</a>
         </div>

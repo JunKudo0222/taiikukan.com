@@ -19,10 +19,16 @@ Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
 
+
 Route::get('gyms/search', 'GymController@search')->name('gyms.search');
 
 Route::resource('gyms', 'GymController');
+Route::get('user/show', 'UserController@show')->name('user.show');
+
 
 
 Route::resource('comments', 'CommentController');
+
+Route::post('gyms/{gym}/favorites', 'BookmarkController@store')->name('favorites');
+Route::post('gyms/{gym}/unfavorites', 'BookmarkController@destroy')->name('unfavorites');
 
